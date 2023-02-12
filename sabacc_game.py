@@ -153,7 +153,7 @@ class SabaccGame:
         if self.whose_turn_accept_bet == pid and self.current_phase == ACCEPTING_RAISE:
             self.folded[pid] = True 
             while len(self.card_players[pid]) > 0:
-                self.drop_card(pid, card_players[pid][0])
+                self.drop_card(pid, self.card_players[pid][0])
 
 
     # Die similator
@@ -313,7 +313,6 @@ class SabaccGame:
                 self.players_messages[i] = BOMB_OUT
 
         # Best cards
-        best_cards_cnt = 0
         best_value = -100
         for i in range(self.n):
             if self.folded[i]:
@@ -386,7 +385,7 @@ class SabaccGame:
     def replace_card(self, pid, card):
         if self.whose_turn == pid and self.current_phase == DRAW and len(self.card_players[pid]) > 2 and card in self.card_players[pid]:
             self.card_players[pid].remove(card)
-            self.draw_extra_card(pid, card)
+            self.draw_extra_card(pid)
 
 
     # Copy to show to player client unit
