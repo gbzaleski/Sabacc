@@ -27,11 +27,11 @@ def get_clear_deck(): # [(name, value)]
     return deck
 
 def sort_deck(deck):
-    deck.sort(key = lambda ele: -ele[1])
+    deck.sort(key = lambda ele: -ele[1]) # Sort by card's value
     return deck
 
 def shuffle_deck(deck):
-    deck.sort(key = lambda ele: random.random())
+    random.shuffle(deck)
     return deck
 
 ## Phases of the game ##
@@ -59,7 +59,7 @@ BOMB_RATIO = 1
 SABACC_VALUE = 23
 
 ## Sabacc game object ## 
-class Game:
+class SabaccGame:
     def __init__(self, no_of_players = 2, starting_money = 2000, basic_bet_value = 50):
         self.n = no_of_players
         self.players_names = [""] * self.n
@@ -295,7 +295,7 @@ class Game:
 
         for i in range(self.n):
             if self.folded[i]:
-                    continue
+                continue
             if self.players_messages[i] == draw_type:
                 self.card_players[i].append(self.draw_card())
 
@@ -304,7 +304,7 @@ class Game:
         # Bomb-outs
         for i in range(self.n):
             if self.folded[i]:
-                    continue
+                continue
             sum_cards = 0
             for (_, value) in self.card_players[i]:
                 sum_cards += value
@@ -317,7 +317,7 @@ class Game:
         best_value = -100
         for i in range(self.n):
             if self.folded[i]:
-                    continue
+                continue
             if self.players_messages[i] == BOMB_OUT:
                 continue
 
@@ -329,7 +329,7 @@ class Game:
         
         for i in range(self.n):
             if self.folded[i]:
-                    continue
+                continue
             if self.players_messages[i] == BOMB_OUT:
                 continue
 
@@ -351,7 +351,7 @@ class Game:
 
         for i in range(self.n):
             if self.folded[i]:
-                    continue
+                continue
             if self.players_messages[i] == BOMB_OUT:
                 self.sabacc_pot += min(main_pot_round // BOMB_RATIO, self.money[i])
                 self.money[i] -= min(main_pot_round // BOMB_RATIO, self.money[i])
@@ -365,7 +365,7 @@ class Game:
 
         for i in range(self.n):
             if self.folded[i]:
-                    continue
+                continue
             if self.players_messages[i] == win_type:
                 self.money[i] += main_pot_round // winner_count + sabacc_pot_round // winner_count
 
@@ -416,7 +416,7 @@ class Game:
 
 
 
-g = Game(4)
+g = SabaccGame(4)
 g.start_game()
 
 # Sudden Demise test for Game(2)
