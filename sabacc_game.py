@@ -43,6 +43,8 @@ RESULTS = "Results Phase"
 SUDDEN_DEMISE = "Sudden Demise Phase"
 DRAW = "Draw Phase"
 
+GET_BOARD = "Get Board"
+
 # Anonymous card
 BACK_CARD = "Back"
 
@@ -55,6 +57,7 @@ BEST_VALUE_WINNER = "Best Value Cards"
 
 # Parametres
 BOMB_RATIO = 1
+LOG = True
 
 SABACC_VALUE = 23
 
@@ -68,7 +71,7 @@ class SabaccGame:
         self.discarded_cards = []
         self.folded = [False] * self.n
         self.whose_turn = -1
-        self.whose_turn_accept_bet = -1
+        self.whose_turn_accept = -1
         self.card_players = [[] for _ in range(self.n)]
         self.current_phase = None
         self.message = ""
@@ -116,8 +119,6 @@ class SabaccGame:
     def start_game(self):
         self.collect_start_game(self.basic_bet)
         self.cards = shuffle_deck(self.cards)
-        self.whose_turn = 0
-        self.current_phase = RAISE
         self.message = ""
         self.players_messages = [""] * self.n
 
@@ -141,7 +142,7 @@ class SabaccGame:
     def accept_bet(self, pid, value):
         # Not run yet 
         exit(2)
-        if self.whose_turn_accept_bet == pid and self.current_phase == ACCEPTING_RAISE:
+        if self.whose_turn_accept == pid and self.current_phase == ACCEPTING_RAISE:
             self.money[pid] -= value
             self.main_pot += value
 
@@ -150,7 +151,7 @@ class SabaccGame:
     def fold(self, pid):
         # Not run yet
         exit(3)
-        if self.whose_turn_accept_bet == pid and self.current_phase == ACCEPTING_RAISE:
+        if self.whose_turn_accept == pid and self.current_phase == ACCEPTING_RAISE:
             self.folded[pid] = True 
             while len(self.card_players[pid]) > 0:
                 self.drop_card(pid, self.card_players[pid][0])
@@ -163,27 +164,35 @@ class SabaccGame:
 
     # Shuffle phase (without random rolling part)    
     def shuffle_players_cards(self, pid):
-        # debug True
-        if True or self.whose_turn == pid and self.current_phase == SHUFFLE:
+        # TODO Shuffling wait or smth (pt 2)
+        if self.whose_turn == pid and self.current_phase == SHUFFLE:
             taken_cards = []
             for i in range(self.n):
-                card = random.choice(self.card_players[i])
-                self.drop_card(i, card)
-                taken_cards.append(card)
+                if not self.folded[i]:
+                    card = random.choice(self.card_players[i])
+                    self.drop_card(i, card)
+                    taken_cards.append(card)
+
+            if LOG:
+                print(taken_cards)
             
             taken_cards = shuffle_deck(taken_cards)
             for i in range(self.n):
-                self.card_players[i].append(taken_cards[i])
+                if not self.folded[i]:
+                    self.card_players[i].append(taken_cards[i])
+
+            if LOG:
+                print(taken_cards)
 
             self.sort_players_cards()
         
 
     # The final part of the game
     def show_game(self, pid):
-        # debug True
-        if True or self.whose_turn == pid and self.current_phase == SHOW:
-
-            print(g.card_players)
+        if self.whose_turn == pid and self.current_phase == SHOW:
+            
+            if LOG:
+                print(g.card_players)
         
             # Bomb-outs
             for i in range(self.n):
@@ -390,6 +399,9 @@ class SabaccGame:
 
     # Copy to show to player client unit
     def client_copy(self, pid = -1):
+        if self.current_phase == RESULTS or self.current_phase == SUDDEN_DEMISE:
+            return self.full_copy()
+
         result = copy.deepcopy(self)
 
         for i in range(self.n):
@@ -413,23 +425,28 @@ class SabaccGame:
             print('\t' * indent + str(key))
             print('\t' * (indent + 1) + str(value))
 
+    def status(self):
+        print(self.money)
+        print(self.cards)
+        print(self.current_phase, self.whose_turn, self.whose_turn_accept)
 
 
-g = SabaccGame(4)
-g.start_game()
 
-# Sudden Demise test for Game(2)
-# g.card_players = [[('Coin-ace', 15), ('Sabre-4', 4)], [('Coin-master', 14), ('Coin-5', 5)]]
+# g = SabaccGame(4)
+# g.start_game()
 
-# Idiots Array test for Game(2)
-# g.card_players = [[('Sabre-3', 3), ("Idiot2", 0), ('Coin-2', 2)], [('Coin-master', 14), ('Flask-ace', 15)]]
+# # Sudden Demise test for Game(2)
+# # g.card_players = [[('Coin-ace', 15), ('Sabre-4', 4)], [('Coin-master', 14), ('Coin-5', 5)]]
 
-# Pure Sabacc test for Game(2)
-# g.card_players = [[('Sabre-6', 6), ('Sabre-8', 8), ('Coin-9', 9)], [('Coin-master', 14), ('Coin-5', 5)]]
+# # Idiots Array test for Game(2)
+# # g.card_players = [[('Sabre-3', 3), ("Idiot2", 0), ('Coin-2', 2)], [('Coin-master', 14), ('Flask-ace', 15)]]
 
-g.show_game(-1)
-print(g.players_messages)
-print("##################")
-g.pprint()
+# # Pure Sabacc test for Game(2)
+# # g.card_players = [[('Sabre-6', 6), ('Sabre-8', 8), ('Coin-9', 9)], [('Coin-master', 14), ('Coin-5', 5)]]
+
+# g.show_game(-1)
+# print(g.players_messages)
+# print("##################")
+# g.pprint()
 
 
