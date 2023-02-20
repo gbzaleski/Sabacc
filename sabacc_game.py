@@ -1,5 +1,6 @@
 import random
 import copy
+import time
 
 ### Auxiliary function for deck of cards ###
 def get_clear_deck(): # [(name, value)]
@@ -44,6 +45,7 @@ SUDDEN_DEMISE = "Sudden Demise Phase"
 DRAW = "Draw Phase"
 
 GET_BOARD = "Get Board"
+IDLE = "Idle Phase"
 
 # Anonymous card
 BACK_CARD = "Back"
@@ -73,7 +75,7 @@ class SabaccGame:
         self.whose_turn = -1
         self.whose_turn_accept = -1
         self.card_players = [[] for _ in range(self.n)]
-        self.current_phase = None
+        self.current_phase = IDLE
         self.message = ""
         self.players_messages = [""] * self.n
 
@@ -174,6 +176,7 @@ class SabaccGame:
                     taken_cards.append(card)
 
             if LOG:
+                print("Shuffling cards:")
                 print(taken_cards)
             
             taken_cards = shuffle_deck(taken_cards)
@@ -192,7 +195,7 @@ class SabaccGame:
         if self.whose_turn == pid and self.current_phase == SHOW:
             
             if LOG:
-                print(g.card_players)
+                print(self.card_players)
         
             # Bomb-outs
             for i in range(self.n):
@@ -300,7 +303,10 @@ class SabaccGame:
     # Tie breaker 
     def run_sudden_demise(self, draw_type):
         print("# Sudden Demise #")
-        print(g.players_messages)
+        self.current_phase = SUDDEN_DEMISE
+        time.sleep(20)
+        if LOG:
+            print(self.players_messages)
 
         for i in range(self.n):
             if self.folded[i]:
@@ -308,7 +314,8 @@ class SabaccGame:
             if self.players_messages[i] == draw_type:
                 self.card_players[i].append(self.draw_card())
 
-        print(g.card_players)
+        if LOG:
+            print(self.card_players)
 
         # Bomb-outs
         for i in range(self.n):
@@ -426,9 +433,15 @@ class SabaccGame:
             print('\t' * (indent + 1) + str(value))
 
     def status(self):
-        print(self.money)
-        print(self.cards)
+        print("#### GAME STATUS ####")
+        print(self.money, f"Main pot = {self.main_pot}; Sabacc pot = {self.sabacc_pot}")
+        print(self.card_players)
         print(self.current_phase, self.whose_turn, self.whose_turn_accept)
+        mess_present = self.message != ""
+        for ele in self.players_messages:
+            mess_present = mess_present or ele != ""
+        if mess_present:
+            print(self.players_messages, self.message)
 
 
 

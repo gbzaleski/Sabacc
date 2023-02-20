@@ -15,7 +15,10 @@ def run_raise(move):
 
 def run_shuffle(move):
     # TODO Shuffling wait or smth (pt 1)
-    if game.roll_die() <= SHUFFLE_THRESHOLD:
+    die_value = game.roll_die()
+    print("Rollled: ", die_value)
+
+    if die_value <= SHUFFLE_THRESHOLD:
         game.shuffle_players_cards(move.pid)
     
     game.current_phase = sg.SHOW
@@ -39,7 +42,8 @@ def run_show(move):
     elif move.value == 1:
         game.whose_turn_accept = -1
         game.current_phase = sg.RESULTS
-        run_results(move.pid)
+        # Go back to receving info
+        start_new_thread(run_results, (move.pid, ))
         
     else:
         print("Unknown command error at show", file=sys.stderr)
@@ -49,20 +53,21 @@ def run_show(move):
 def run_results(pid):
     game.show_game(pid) # Contains run sudden demise and pay prizes
     print("Test long sleep after end") # TODO finish animation
-    time.sleep(30)
+    time.sleep(20)
     start_new_round()
 
 def start_new_round():
     # TODO Add dealer starter
-    game.whose_turn = 0
-    game.current_phase = sg.RAISE
-
+    
     # Prepare deck
     game.cards = game.cards + game.discarded_cards
     game.discarded_cards = []
     game.cards = sg.shuffle_deck(game.cards)
 
     game.start_game()
+
+    game.whose_turn = 0
+    game.current_phase = sg.RAISE
      
 
 # -1 = None, -2 = Extra Card, i = Index for card swap
@@ -101,7 +106,7 @@ def play_move(move):
     elif move.type == sg.DRAW:
         run_draw_phase(move)
     else:
-        print("Unknown command error", file=sys.stderr)
+        print("Unknown command error", move, file=sys.stderr)
         exit()
 
     game.status()
@@ -124,7 +129,9 @@ def threaded_client(conn, pid):
                 continue
 
             # Correct update (normal turn)
-            if data.type == game.current_phase and (game.whose_turn == pid or game.whose_turn_accept):
+            if data.type == game.current_phase and \
+                ((game.whose_turn == pid and game.current_phase not in {sg.ACCEPTING_RAISE, sg.SHOW}) 
+                or (game.whose_turn_accept == pid and game.current_phase in {sg.ACCEPTING_RAISE, sg.SHOW})):
                 play_move(data)
             else: # Wrong moment for update
                 pass 
@@ -173,6 +180,7 @@ if __name__ == "__main__":
         if pid_count + 1 <  game.n:
             start_new_thread(threaded_client, (_conn, pid_count))
         else: # Last player
+            start_new_round()
             threaded_client(_conn, pid_count) 
   
     
