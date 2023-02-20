@@ -80,6 +80,7 @@ class SabaccGame:
         self.players_messages = [""] * self.n
 
         self.basic_bet = basic_bet_value
+        self.value_to_raise = 0
         self.sabacc_pot = 0
         self.sabacc_winner = -1
         self.main_pot = 0
@@ -110,8 +111,12 @@ class SabaccGame:
 
 
     def collect_start_game(self, in_value):
-        # folded[true] -> does not participate
         for i in range(self.n):
+            if self.money[i] < in_value * 2:
+                self.folded[i] = True
+            else:
+                self.folded[i] = False
+
             if not self.folded[i]:
                 self.money[i] -= in_value * 2
                 self.main_pot += in_value
@@ -133,26 +138,23 @@ class SabaccGame:
 
 
     def raise_bet(self, pid, value):
-        if self.whose_turn == pid and self.current_phase == RAISE and value <= self.money[pid]:
-            # Simplified for now - does not check for other people choice (TODO)
-            for i in range(self.n):
-                self.money[i] -= value
-                self.main_pot += value
+        value = max(0, value)
+        value = min(value, self.money[pid])
+        if self.whose_turn == pid and self.current_phase == RAISE:
+            self.money[pid] -= value
+            self.main_pot += value
+            self.value_to_raise = value
 
 
     # Player's choice to accept raise
     def accept_bet(self, pid, value):
-        # Not run yet 
-        exit(2)
         if self.whose_turn_accept == pid and self.current_phase == ACCEPTING_RAISE:
             self.money[pid] -= value
             self.main_pot += value
 
 
-    # Player's choice to skip game
+    # Player's choice to skip the rest of the game
     def fold(self, pid):
-        # Not run yet
-        exit(3)
         if self.whose_turn_accept == pid and self.current_phase == ACCEPTING_RAISE:
             self.folded[pid] = True 
             while len(self.card_players[pid]) > 0:

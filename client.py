@@ -1,10 +1,8 @@
-import pygame
-from network import Network
-import pickle
-import sabacc_game as sg
 import sys
-import time 
+import pygame
 from move import *
+from network import Network
+import sabacc_game as sg
 
 pygame.font.init()
 
@@ -34,6 +32,7 @@ def update_game(win, game : sg.SabaccGame, my_pid):
     game.status()
     # redrawWindows
 
+
 def read_player_move(game, my_pid):
     # TODO Do pygame interface
     if game.current_phase == sg.RAISE:
@@ -42,8 +41,9 @@ def read_player_move(game, my_pid):
         return Move(my_pid, sg.RAISE, value)
     
     elif game.current_phase == sg.ACCEPTING_RAISE:
-        print("Wrong command error accept_raise", file=sys.stderr)
-        exit()
+        print("Accept bet (1 = Yes, 0 = Fold)")
+        value = int(input())
+        return Move(my_pid, sg.ACCEPTING_RAISE, value)
 
     elif game.current_phase == sg.SHUFFLE:
         print("Roll dice")
@@ -59,7 +59,7 @@ def read_player_move(game, my_pid):
         # No moves here
         return Move(my_pid, sg.GET_BOARD)
 
-    elif game.current_phase == sg.SUDDEN_DEMISE:
+    elif game.current_phase == sg.SUDDEN_DEMISE or game.current_phase == sg.IDLE:
         # No moves here
         return Move(my_pid, sg.GET_BOARD)
 
@@ -70,6 +70,7 @@ def read_player_move(game, my_pid):
 
     else:
         print("Wrong command error", file=sys.stderr)
+        game.status()
         exit()
 
 

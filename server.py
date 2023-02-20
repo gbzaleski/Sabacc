@@ -10,7 +10,12 @@ SHUFFLE_THRESHOLD = 2
 # value = Amount to raise
 def run_raise(move):
     game.raise_bet(move.pid, move.value)
-    game.current_phase = sg.SHUFFLE
+    game.current_phase = sg.ACCEPTING_RAISE
+
+    game.whose_turn_accept = (game.whose_turn + 1) % game.n
+    while game.folded[game.whose_turn_accept]:
+        game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
+
 
 
 def run_shuffle(move):
@@ -82,17 +87,50 @@ def run_draw_phase(move):
     game.whose_turn = (game.whose_turn + 1) % game.n
     while game.folded[game.whose_turn]:
         game.whose_turn = (game.whose_turn + 1) % game.n
+
+
+# Accept bet (1 = Yes, 0 = Fold)   
+def run_accepting_bets(move):
+    if move.value == 1:
+        game.accept_bet(move.pid, game.value_to_raise)
+    else:
+        game.fold(move.pid)
+
+    game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
+    while game.folded[game.whose_turn_accept]:
+        game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
+
+    # Everyone folded/paid
+    if game.whose_turn_accept == game.whose_turn: 
+        game.whose_turn_accept = -1
+        game.current_phase = sg.SHUFFLE
+
+    # Check if game finished
+    not_folded_status = 0
+    for fold_status in game.folded:
+        if not fold_status:
+            not_folded_status += 1
+
+
+    if not_folded_status == 1:
+        print("Everyone folded")
+        game.message = "Everyone has folded - round concluded"
+        game.current_phase = sg.IDLE
+        #start_new_thread(auto_win)
+
+
+def auto_win():
+    time.sleep(10)
+    # TODO: Execting and running this
+    print("Paying main pot to the winner")
     
-
-
+    
 # Already satisfied fact that the move can be played
 def play_move(move):
     if move.type == sg.RAISE:
         run_raise(move)
     elif move.type == sg.ACCEPTING_RAISE:
-        # TODO Do accept for bets
-        print("TODO command", file=sys.stderr)
-        exit() 
+        run_accepting_bets(move)
     elif move.type == sg.SHUFFLE:
         run_shuffle(move)
     elif move.type == sg.SHOW:
