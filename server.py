@@ -116,13 +116,20 @@ def run_accepting_bets(move):
         print("Everyone folded")
         game.message = "Everyone has folded - round concluded"
         game.current_phase = sg.IDLE
-        #start_new_thread(auto_win)
+        start_new_thread(auto_win, ())
 
 
 def auto_win():
-    time.sleep(10)
-    # TODO: Execting and running this
-    print("Paying main pot to the winner")
+    time.sleep(15)
+    print("Paying main pot to the only one left")
+
+    for i in range(game.n):
+        if not game.folded[i]:
+            game.money[i] += game.main_pot
+            game.main_pot = 0
+            break
+
+    start_new_round()
     
     
 # Already satisfied fact that the move can be played
