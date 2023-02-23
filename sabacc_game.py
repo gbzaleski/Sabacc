@@ -436,6 +436,7 @@ class SabaccGame:
 
     def status(self):
         print("#### GAME STATUS ####")
+        print(" vs ".join(self.players_names))
         print(self.money, f"Main pot = {self.main_pot}; Sabacc pot = {self.sabacc_pot}")
         print(self.card_players)
         print(self.current_phase, self.whose_turn, self.whose_turn_accept)
@@ -444,6 +445,7 @@ class SabaccGame:
             mess_present = mess_present or ele != ""
         if mess_present:
             print(self.players_messages, self.message)
+        print()
 
 
 

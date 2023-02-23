@@ -1,4 +1,5 @@
 import sys
+import time
 import pygame
 from move import *
 from network import Network
@@ -11,26 +12,24 @@ height = 600
 win = pygame.display.set_mode((width, height))
 pygame.display.set_caption("Sabacc Player")
 
-m_whose_turn = -1
-m_whose_turn_accept = -1
-m_current_phase = None
 
 def redrawWindow(win, game, p):
     pass
 
 
-def update_game(win, game : sg.SabaccGame, my_pid):
-    global m_whose_turn, m_whose_turn_accept, m_current_phase
-    if m_whose_turn == game.whose_turn \
-        and m_whose_turn_accept == game.whose_turn_accept \
-        and m_current_phase == game.current_phase:
-        return 
+mem_status = None
+def parse_mem(game):
+    return (game.whose_turn, game.whose_turn_accept, 
+        game.current_phase, game.message, game.players_messages)
 
-    m_whose_turn = game.whose_turn
-    m_whose_turn_accept = game.whose_turn_accept
-    m_current_phase = game.current_phase
+def update_game(win, game : sg.SabaccGame, my_pid):
+    global mem_status
+    current_status = parse_mem(game)
+    if mem_status == current_status:
+        return
+    mem_status = current_status
     game.status()
-    # redrawWindows
+    # redrawWindows()
 
 
 def read_player_move(game, my_pid):
@@ -76,14 +75,25 @@ def read_player_move(game, my_pid):
 
 # Run with python client.py server_name port [username]
 if __name__ == "__main__":
-    run = True
+
     clock = pygame.time.Clock()
-    n = Network("localhost", 5555)
-    my_pid = int(n.get_p())
+    try:
+        server = sys.argv[1]
+        port = int(sys.argv[2])
+        n = Network(server, port)
+        my_pid = int(n.get_p())
+    except:
+        print("Error while connecting to the server")
+        exit()
 
-    print("You are player: ", my_pid)
+    try:
+        username = sys.argv[3]
+    except IndexError:
+        username = "Username" + str(time.time() % 1)[2:][-6:]
 
-    while run:
+    print(f"{username} - you are player: {my_pid}")
+
+    while True:
         clock.tick(1)
 
         try:
@@ -91,7 +101,6 @@ if __name__ == "__main__":
             print("Received: ", game)
             update_game(win, game, my_pid)
         except:
-            run = False
             print("Coudn't get game!")
             break
 
@@ -101,11 +110,10 @@ if __name__ == "__main__":
             next_move = read_player_move(game, my_pid)
             game = n.send(next_move)
             update_game(win, game, my_pid)
-            pass
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                run = False
                 #pygame.quit()
+                break
                 
         

@@ -127,6 +127,8 @@ def auto_win():
         if not game.folded[i]:
             game.money[i] += game.main_pot
             game.main_pot = 0
+            game.discarded_cards = game.discarded_cards + game.card_players[i]
+            game.card_players[i] = []
             break
 
     start_new_round()
