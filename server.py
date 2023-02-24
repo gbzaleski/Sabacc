@@ -1,5 +1,5 @@
 import socket
-from _thread import *
+from _thread import start_new_thread
 import pickle
 import sys
 import time
@@ -175,6 +175,11 @@ def threaded_client(conn, pid):
                 conn.send(pickle.dumps(game.client_copy(pid))) 
                 continue
 
+            if data.type == sg.SET_NAME:
+                game.set_name(pid, data.value)
+                conn.send(pickle.dumps(game.client_copy(pid))) 
+                continue
+
             # Correct update (normal turn)
             if data.type == game.current_phase and \
                 ((game.whose_turn == pid and game.current_phase not in {sg.ACCEPTING_RAISE, sg.SHOW}) 
@@ -185,7 +190,6 @@ def threaded_client(conn, pid):
             
             conn.send(pickle.dumps(game.client_copy(pid))) 
             
-            #conn.sendall(pickle.dumps(game)) 
         except:
             break
 

@@ -45,6 +45,7 @@ SUDDEN_DEMISE = "Sudden Demise Phase"
 DRAW = "Draw Phase"
 
 GET_BOARD = "Get Board"
+SET_NAME = "Set Name"
 IDLE = "Idle Phase"
 
 # Anonymous card

@@ -1,9 +1,12 @@
 import sys
-import time
+import random
 import pygame
+import string
 from move import *
 from network import Network
 import sabacc_game as sg
+
+USER_TAG_LEN = 6
 
 pygame.font.init()
 
@@ -86,10 +89,10 @@ if __name__ == "__main__":
         print("Error while connecting to the server")
         exit()
 
-    try:
+    if len(sys.argv) > 3:
         username = sys.argv[3]
-    except IndexError:
-        username = "Username" + str(time.time() % 1)[2:][-6:]
+    else:
+        username = "Username" + "".join(random.sample(string.digits, USER_TAG_LEN))
 
     print(f"{username} - you are player: {my_pid}")
 
@@ -98,6 +101,8 @@ if __name__ == "__main__":
 
         try:
             game = n.send(Move(my_pid, sg.GET_BOARD))
+            if game.players_names[my_pid] != username:
+                game = n.send(Move(my_pid, sg.SET_NAME, username))
             print("Received: ", game)
             update_game(win, game, my_pid)
         except:
