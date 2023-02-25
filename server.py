@@ -1,15 +1,19 @@
 import socket
-from _thread import start_new_thread
-from move import Move
 import pickle
 import sys
 import time
+from _thread import start_new_thread
+from move import Move
 import sabacc_game as sg
 
 SHUFFLE_THRESHOLD = 2
 
 # value = Amount to raise
 def run_raise(move : Move) -> None:
+    if isinstance(move.value, str):
+        print("Wrong format of move's value", file=sys.stderr)
+        exit() 
+
     game.raise_bet(move.pid, move.value)
     game.current_phase = sg.ACCEPTING_RAISE
 
@@ -163,8 +167,7 @@ def play_move(move : Move) -> None:
 
     game.status()
 
-def threaded_client(conn, pid : int) -> None:
-    print(type(conn))
+def threaded_client(conn : socket.socket, pid : int) -> None:
     conn.send(str.encode(str(pid)))
     
     while True:
@@ -207,9 +210,9 @@ if __name__ == "__main__":
         exit()
 
     try:
-        server = sys.argv[1]
-        port = int(sys.argv[2])
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server : str = sys.argv[1]
+        port : int = int(sys.argv[2])
+        s : socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind((server, port))
     except socket.error as err:
         print(err)
@@ -234,7 +237,7 @@ if __name__ == "__main__":
         _conn, addr = s.accept()
         print("Connected to: ", addr)
 
-        if pid_count + 1 <  game.n:
+        if pid_count + 1 < game.n:
             start_new_thread(threaded_client, (_conn, pid_count))
         else: # Last player
             start_new_round()

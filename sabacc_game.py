@@ -1,12 +1,16 @@
+from __future__ import annotations
 import random
 import copy
 import time
-from typing import Optional
+from typing import Optional, TypeAlias, no_type_check
+
+Card : TypeAlias = tuple[str, Optional[int]]
+Deck : TypeAlias = list[Card]
 
 ### Auxiliary function for deck of cards ###
-def get_clear_deck(): # [(name, value)]
-    deck = []
-    colours = ["Sabre", "Stave", "Flask", "Coin"]
+def get_clear_deck() -> Deck: # [(name, value)]
+    deck : Deck = []
+    colours : list[str] = ["Sabre", "Stave", "Flask", "Coin"]
     
     for colour in colours:
         deck += [(colour + "-" + str(v), v) for v in range(1, 12)]
@@ -16,7 +20,7 @@ def get_clear_deck(): # [(name, value)]
         deck.append((colour + "-" + "ace", 15))
 
     # Negatives
-    neg = [("Queen", -2), ("Endurance", -8), ("Balance", -11), 
+    neg : Deck = [("Queen", -2), ("Endurance", -8), ("Balance", -11), 
         ("Demise", -13), ("Moderation", -14), ("Evil-one", -15), ("Star", -17)]
 
     deck += neg
@@ -28,11 +32,11 @@ def get_clear_deck(): # [(name, value)]
 
     return deck
 
-def sort_deck(deck):
-    deck.sort(key = lambda ele: -ele[1]) # Sort by card's value
+def sort_deck(deck : Deck) -> Deck:
+    deck.sort(key = lambda ele: -ele[1] if isinstance(ele[1], int) else 0) # Sort by card's value
     return deck
 
-def shuffle_deck(deck):
+def shuffle_deck(deck : Deck) -> Deck:
     random.shuffle(deck)
     return deck
 
@@ -71,29 +75,29 @@ class SabaccGame:
         self.n = no_of_players
         self.players_names = [""] * self.n
         self.money = [starting_money] * self.n
-        self.cards = get_clear_deck()
-        self.discarded_cards = []
+        self.cards : Deck = get_clear_deck()
+        self.discarded_cards : Deck = []
         self.folded = [False] * self.n
-        self.whose_turn = -1
-        self.whose_turn_accept = -1
-        self.card_players = [[] for _ in range(self.n)]
-        self.current_phase = IDLE
-        self.message = ""
+        self.whose_turn : int = -1
+        self.whose_turn_accept : int = -1
+        self.card_players : list[Deck] = [[] for _ in range(self.n)]
+        self.current_phase : str = IDLE
+        self.message : str = ""
         self.players_messages = [""] * self.n
 
-        self.basic_bet = basic_bet_value
-        self.value_to_raise = 0
-        self.sabacc_pot = 0
-        self.sabacc_winner = -1
-        self.main_pot = 0
-        self.main_pot_winner = -1
+        self.basic_bet : int = basic_bet_value
+        self.value_to_raise : int = 0
+        self.sabacc_pot : int = 0
+        self.sabacc_winner : int = -1
+        self.main_pot : int = 0
+        self.main_pot_winner : int = -1
 
 
-    def set_name(self, pid, name):
+    def set_name(self, pid : int, name : str) -> None:
         self.players_names[pid] = name
 
 
-    def draw_card(self):
+    def draw_card(self) -> Card:
         if self.cards == []:
             self.cards = shuffle_deck(self.discarded_cards)
             self.discarded_cards = []
@@ -101,18 +105,18 @@ class SabaccGame:
         return self.cards.pop()
 
 
-    def drop_card(self, pid, card):
+    def drop_card(self, pid : int, card : Card) -> None:
         if card in self.card_players[pid]:
             self.card_players[pid].remove(card)
             self.discarded_cards.append(card)
 
 
-    def sort_players_cards(self):
+    def sort_players_cards(self) -> None:
         for i in range(self.n):
             self.card_players[i] = sort_deck(self.card_players[i])
 
 
-    def collect_start_game(self, in_value):
+    def collect_start_game(self, in_value : int) -> None:
         for i in range(self.n):
             if self.money[i] < in_value * 2:
                 self.folded[i] = True
@@ -125,7 +129,7 @@ class SabaccGame:
                 self.sabacc_pot += in_value
 
 
-    def start_game(self):
+    def start_game(self) -> None:
         self.collect_start_game(self.basic_bet)
         self.cards = shuffle_deck(self.cards)
         self.message = ""
@@ -139,7 +143,7 @@ class SabaccGame:
         self.sort_players_cards()
 
 
-    def raise_bet(self, pid, value):
+    def raise_bet(self, pid : int, value : int) -> None:
         value = max(0, value)
         value = min(value, self.money[pid])
         if self.whose_turn == pid and self.current_phase == RAISE:
@@ -149,14 +153,14 @@ class SabaccGame:
 
 
     # Player's choice to accept raise
-    def accept_bet(self, pid, value):
+    def accept_bet(self, pid : int, value : int) -> None:
         if self.whose_turn_accept == pid and self.current_phase == ACCEPTING_RAISE:
             self.money[pid] -= value
             self.main_pot += value
 
 
     # Player's choice to skip the rest of the game
-    def fold(self, pid):
+    def fold(self, pid : int) -> None:
         if self.whose_turn_accept == pid and self.current_phase == ACCEPTING_RAISE:
             self.folded[pid] = True 
             while len(self.card_players[pid]) > 0:
@@ -164,12 +168,12 @@ class SabaccGame:
 
 
     # Die similator
-    def roll_die(self):
+    def roll_die(self) -> int:
         return random.randint(1,6)
 
 
     # Shuffle phase (without random rolling part)    
-    def shuffle_players_cards(self, pid):
+    def shuffle_players_cards(self, pid : int) -> None:
         # TODO Shuffling wait or smth (pt 2)
         if self.whose_turn == pid and self.current_phase == SHUFFLE:
             taken_cards = []
@@ -195,7 +199,8 @@ class SabaccGame:
         
 
     # The final part of the game
-    def show_game(self, pid):
+    @no_type_check # Card will not be None type
+    def show_game(self, pid : int) -> None:
         if self.whose_turn == pid and self.current_phase == SHOW:
             
             if LOG:
@@ -304,8 +309,9 @@ class SabaccGame:
                 return
 
 
-    # Tie breaker 
-    def run_sudden_demise(self, draw_type):
+    # Tie breaker
+    @no_type_check # Card will not be None type
+    def run_sudden_demise(self, draw_type : str) -> None:
         print("# Sudden Demise #")
         self.current_phase = SUDDEN_DEMISE
         time.sleep(20)
@@ -361,7 +367,7 @@ class SabaccGame:
 
 
     # Dealing money after the round
-    def pay_prizes(self, win_type):
+    def pay_prizes(self, win_type : str) -> None:
         winner_count = 0
         sabacc_pot_round = self.sabacc_pot
         self.sabacc_pot = 0
@@ -395,21 +401,21 @@ class SabaccGame:
 
 
     # Drawing phase - extra card
-    def draw_extra_card(self, pid):
+    def draw_extra_card(self, pid : int) -> None:
         if self.whose_turn == pid and self.current_phase == DRAW:
             self.card_players[pid].append(self.draw_card())
             self.sort_players_cards()
 
 
     # Drawing phase - replacing card
-    def replace_card(self, pid, card):
+    def replace_card(self, pid : int, card : Card) -> None:
         if self.whose_turn == pid and self.current_phase == DRAW and len(self.card_players[pid]) > 2 and card in self.card_players[pid]:
             self.card_players[pid].remove(card)
             self.draw_extra_card(pid)
 
 
     # Copy to show to player client unit
-    def client_copy(self, pid = -1):
+    def client_copy(self, pid : int = -1) -> SabaccGame:
         if self.current_phase == RESULTS or self.current_phase == SUDDEN_DEMISE:
             return self.full_copy()
 
@@ -426,17 +432,17 @@ class SabaccGame:
 
 
     # Full copy of the game
-    def full_copy(self):
+    def full_copy(self) -> SabaccGame:
         return copy.deepcopy(self)
 
     # Printing current game status
-    def pprint(self, indent = 0):
+    def pprint(self, indent : int = 0) -> None:
         d = self.__dict__
         for key, value in d.items():
             print('\t' * indent + str(key))
             print('\t' * (indent + 1) + str(value))
 
-    def status(self):
+    def status(self) -> None:
         print("#### GAME STATUS ####")
         print(" vs ".join(self.players_names))
         print(self.money, f"Main pot = {self.main_pot}; Sabacc pot = {self.sabacc_pot}")
