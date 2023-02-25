@@ -1,7 +1,7 @@
 
 # Class for passing players' moves
 class Move:
-    def __init__(self, _pid, _type, _value = None):
+    def __init__(self, _pid : int, _type : str, _value : int | str = ""):
         self.pid = _pid
         self.type = _type
         self.value = _value

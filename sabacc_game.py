@@ -1,6 +1,7 @@
 import random
 import copy
 import time
+from typing import Optional
 
 ### Auxiliary function for deck of cards ###
 def get_clear_deck(): # [(name, value)]
@@ -66,7 +67,7 @@ SABACC_VALUE = 23
 
 ## Sabacc game object ## 
 class SabaccGame:
-    def __init__(self, no_of_players = 2, starting_money = 2000, basic_bet_value = 50):
+    def __init__(self, no_of_players : int = 2, starting_money : int = 2000, basic_bet_value : int = 50):
         self.n = no_of_players
         self.players_names = [""] * self.n
         self.money = [starting_money] * self.n

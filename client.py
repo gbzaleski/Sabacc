@@ -21,11 +21,11 @@ def redrawWindow(win, game, p):
 
 
 mem_status = None
-def parse_mem(game):
+def parse_mem(game : sg.SabaccGame):
     return (game.whose_turn, game.whose_turn_accept, 
         game.current_phase, game.message, game.players_messages)
 
-def update_game(win, game : sg.SabaccGame, my_pid):
+def update_game(win, game : sg.SabaccGame, my_pid : int):
     global mem_status
     current_status = parse_mem(game)
     if mem_status == current_status:
@@ -35,7 +35,7 @@ def update_game(win, game : sg.SabaccGame, my_pid):
     # redrawWindows()
 
 
-def read_player_move(game, my_pid):
+def read_player_move(game : sg.SabaccGame, my_pid : int) -> Move:
     # TODO Do pygame interface
     if game.current_phase == sg.RAISE:
         print("Bet to raise (non-positive = skip)")

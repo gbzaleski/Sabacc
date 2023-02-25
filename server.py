@@ -1,5 +1,6 @@
 import socket
 from _thread import start_new_thread
+from move import Move
 import pickle
 import sys
 import time
@@ -8,7 +9,7 @@ import sabacc_game as sg
 SHUFFLE_THRESHOLD = 2
 
 # value = Amount to raise
-def run_raise(move):
+def run_raise(move : Move) -> None:
     game.raise_bet(move.pid, move.value)
     game.current_phase = sg.ACCEPTING_RAISE
 
@@ -18,7 +19,7 @@ def run_raise(move):
 
 
 
-def run_shuffle(move):
+def run_shuffle(move : Move) -> None:
     # TODO Shuffling wait or smth (pt 1)
     die_value = game.roll_die()
     print("Rollled: ", die_value)
@@ -33,7 +34,7 @@ def run_shuffle(move):
 
 
 # 1 = Show, 0 = Continue
-def run_show(move): 
+def run_show(move : Move) -> None: 
     if move.value == 0:
         game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
         while game.folded[game.whose_turn_accept]:
@@ -55,13 +56,13 @@ def run_show(move):
         exit() 
 
 
-def run_results(pid):
+def run_results(pid : int) -> None:
     game.show_game(pid) # Contains run sudden demise and pay prizes
     print("Test long sleep after end") # TODO finish animation
     time.sleep(20)
     start_new_round()
 
-def start_new_round():
+def start_new_round() -> None:
     # TODO Add dealer starter
     
     # Prepare deck
@@ -75,8 +76,12 @@ def start_new_round():
     game.current_phase = sg.RAISE
      
 
-# -1 = None, -2 = Extra Card, i = Index for card swap
-def run_draw_phase(move):
+# -1 = None, -2 = Extra Card, i = Index for card swap 
+def run_draw_phase(move : Move) -> None:
+    if isinstance(move.value, str):
+        print("Wrong format of move's value", file=sys.stderr)
+        exit() 
+
     if move.value >= 0 and move.value < len(game.card_players[move.pid]):
         game.replace_card(move.pid, game.card_players[move.pid][move.value])
     elif move.value == -2:
@@ -90,7 +95,7 @@ def run_draw_phase(move):
 
 
 # Accept bet (1 = Yes, 0 = Fold)   
-def run_accepting_bets(move):
+def run_accepting_bets(move : Move) -> None:
     if move.value == 1:
         game.accept_bet(move.pid, game.value_to_raise)
     else:
@@ -119,7 +124,7 @@ def run_accepting_bets(move):
         start_new_thread(auto_win, ())
 
 
-def auto_win():
+def auto_win() -> None:
     time.sleep(15)
     print("Paying main pot to the only one left")
 
@@ -135,7 +140,7 @@ def auto_win():
     
     
 # Already satisfied fact that the move can be played
-def play_move(move):
+def play_move(move : Move) -> None:
     if move.type == sg.RAISE:
         run_raise(move)
     elif move.type == sg.ACCEPTING_RAISE:
@@ -158,7 +163,8 @@ def play_move(move):
 
     game.status()
 
-def threaded_client(conn, pid):
+def threaded_client(conn, pid : int) -> None:
+    print(type(conn))
     conn.send(str.encode(str(pid)))
     
     while True:
