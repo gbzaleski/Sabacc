@@ -3,6 +3,7 @@ import random
 import pygame
 import string
 from move import *
+from interface import *
 from network import Network
 import sabacc_game as sg
 
@@ -47,7 +48,7 @@ def read_player_move(game : sg.SabaccGame, my_pid : int) -> Move:
         return Move(my_pid, sg.RAISE, value)
     
     elif game.current_phase == sg.ACCEPTING_RAISE:
-        print("Accept bet (1 = Yes, 0 = Fold)")
+        print(f"Accept bet of [{game.value_to_raise}] (1 = Yes, 0 = Fold)")
         value = int(input())
         return Move(my_pid, sg.ACCEPTING_RAISE, value)
 

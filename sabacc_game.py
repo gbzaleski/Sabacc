@@ -198,7 +198,11 @@ class SabaccGame:
 
     # The final part of the game
     def show_game(self, pid : int) -> None:
-        if self.whose_turn == pid and self.current_phase == SHOW:
+        print("Test: ", self.whose_turn_accept, self.current_phase, pid)
+        if self.whose_turn_accept == pid and self.current_phase == RESULTS:
+
+            if LOG:
+                print("Running show")
             
             # Bomb-outs
             for i in range(self.n):
@@ -308,11 +312,10 @@ class SabaccGame:
 
 
     # Tie breaker
-    @no_type_check # Card will not be None type
     def run_sudden_demise(self, draw_type : str) -> None:
         print("# Sudden Demise #")
         self.current_phase = SUDDEN_DEMISE
-        time.sleep(20)
+        time.sleep(10)
         if LOG:
             print(self.players)
 
@@ -347,6 +350,7 @@ class SabaccGame:
 
             sum_cards = 0
             for (_, value) in self.players[i].cards:
+                assert value is not None
                 sum_cards += value
             
             best_value = max(best_value, sum_cards)
@@ -368,6 +372,9 @@ class SabaccGame:
 
     # Dealing money after the round
     def pay_prizes(self, win_type : str) -> None:
+        if LOG:
+            print("Paying winners show")
+
         winner_count = 0
         sabacc_pot_round = self.sabacc_pot
         self.sabacc_pot = 0
@@ -399,6 +406,11 @@ class SabaccGame:
         
         # Check if the caller won (TODO)
 
+        # Folding all cards
+        for i in range(self.n):
+            self.discarded_cards += self.players[i].cards
+            self.players[i].cards = []
+
 
     # Drawing phase - extra card
     def draw_extra_card(self, pid : int) -> None:
@@ -414,7 +426,7 @@ class SabaccGame:
             self.draw_extra_card(pid)
 
 
-    # Copy to show to player client unit
+    # Copy to show to the player client unit
     def client_copy(self, pid : int = -1) -> SabaccGame:
         if self.current_phase == RESULTS or self.current_phase == SUDDEN_DEMISE:
             return self.full_copy()

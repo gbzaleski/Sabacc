@@ -50,24 +50,28 @@ def run_show(move : Move) -> None:
 
     # Somebody calls
     elif move.value == 1:
-        game.whose_turn_accept = -1
         game.current_phase = sg.RESULTS
         # Go back to receving info
         start_new_thread(run_results, (move.pid, ))
-        
     else:
         print("Unknown command error at show", file=sys.stderr)
         exit() 
 
 
 def run_results(pid : int) -> None:
+    time.sleep(10)
     game.show_game(pid) # Contains run sudden demise and pay prizes
+    game.whose_turn_accept = -1
+    game.current_phase = sg.IDLE
     print("Test long sleep after end") # TODO finish animation
-    time.sleep(20)
+    time.sleep(10)
     start_new_round()
 
 def start_new_round() -> None:
     # TODO Add dealer starter
+
+    print("Starting new round!")
+    time.sleep(10)
     
     # Prepare deck
     game.cards = game.cards + game.discarded_cards
@@ -129,14 +133,14 @@ def run_accepting_bets(move : Move) -> None:
 
 
 def auto_win() -> None:
-    time.sleep(15)
+    time.sleep(10)
     print("Paying main pot to the only one left")
 
     for i in range(game.n):
         if not game.players[i].folded:
             game.players[i].money += game.main_pot
             game.main_pot = 0
-            game.discarded_cards = game.discarded_cards + game.players[i].cards
+            game.discarded_cards += game.players[i].cards
             game.players[i].cards = []
             break
 
@@ -240,8 +244,9 @@ if __name__ == "__main__":
         if pid_count + 1 < game.n:
             start_new_thread(threaded_client, (_conn, pid_count))
         else: # Last player
-            start_new_round()
-            threaded_client(_conn, pid_count) 
+            start_new_thread(start_new_round, ())
+            threaded_client(_conn, pid_count)
+            
   
     
 
