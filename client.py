@@ -22,8 +22,12 @@ def redrawWindow(win, game, p):
 
 mem_status = None
 def parse_mem(game : sg.SabaccGame):
+    players_messages = []
+    for player in game.players:
+        players_messages.append(player.message)
+
     return (game.whose_turn, game.whose_turn_accept, 
-        game.current_phase, game.message, game.players_messages)
+        game.current_phase, game.message, players_messages)
 
 def update_game(win, game : sg.SabaccGame, my_pid : int):
     global mem_status
@@ -101,7 +105,7 @@ if __name__ == "__main__":
 
         try:
             game : sg.SabaccGame = n.send(Move(my_pid, sg.GET_BOARD))
-            if game.players_names[my_pid] != username:
+            if game.players[my_pid].name != username:
                 game = n.send(Move(my_pid, sg.SET_NAME, username))
             print("Received: ", game)
             update_game(win, game, my_pid)

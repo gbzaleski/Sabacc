@@ -18,7 +18,7 @@ def run_raise(move : Move) -> None:
     game.current_phase = sg.ACCEPTING_RAISE
 
     game.whose_turn_accept = (game.whose_turn + 1) % game.n
-    while game.folded[game.whose_turn_accept]:
+    while game.players[game.whose_turn_accept].folded:
         game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
 
 
@@ -33,7 +33,7 @@ def run_shuffle(move : Move) -> None:
     
     game.current_phase = sg.SHOW
     game.whose_turn_accept = (game.whose_turn + 1) % game.n
-    while game.folded[game.whose_turn_accept]:
+    while game.players[game.whose_turn_accept].folded:
         game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
 
 
@@ -41,7 +41,7 @@ def run_shuffle(move : Move) -> None:
 def run_show(move : Move) -> None: 
     if move.value == 0:
         game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
-        while game.folded[game.whose_turn_accept]:
+        while game.players[game.whose_turn_accept].folded:
             game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
         # Nobody called
         if game.whose_turn_accept == game.whose_turn: 
@@ -86,15 +86,15 @@ def run_draw_phase(move : Move) -> None:
         print("Wrong format of move's value", file=sys.stderr)
         exit() 
 
-    if move.value >= 0 and move.value < len(game.card_players[move.pid]):
-        game.replace_card(move.pid, game.card_players[move.pid][move.value])
+    if move.value >= 0 and move.value < len(game.players[move.pid].cards):
+        game.replace_card(move.pid, game.players[move.pid].cards[move.value])
     elif move.value == -2:
         game.draw_extra_card(move.pid)
     
     # Next player's turn
     game.current_phase = sg.RAISE
     game.whose_turn = (game.whose_turn + 1) % game.n
-    while game.folded[game.whose_turn]:
+    while game.players[game.whose_turn].folded:
         game.whose_turn = (game.whose_turn + 1) % game.n
 
 
@@ -106,7 +106,7 @@ def run_accepting_bets(move : Move) -> None:
         game.fold(move.pid)
 
     game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
-    while game.folded[game.whose_turn_accept]:
+    while game.players[game.whose_turn_accept].folded:
         game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
 
     # Everyone folded/paid
@@ -116,8 +116,8 @@ def run_accepting_bets(move : Move) -> None:
 
     # Check if game finished
     not_folded_status = 0
-    for fold_status in game.folded:
-        if not fold_status:
+    for fold_status in game.players:
+        if not fold_status.folded:
             not_folded_status += 1
 
 
@@ -133,11 +133,11 @@ def auto_win() -> None:
     print("Paying main pot to the only one left")
 
     for i in range(game.n):
-        if not game.folded[i]:
-            game.money[i] += game.main_pot
+        if not game.players[i].folded:
+            game.players[i].money += game.main_pot
             game.main_pot = 0
-            game.discarded_cards = game.discarded_cards + game.card_players[i]
-            game.card_players[i] = []
+            game.discarded_cards = game.discarded_cards + game.players[i].cards
+            game.players[i].cards = []
             break
 
     start_new_round()
