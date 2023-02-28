@@ -2,7 +2,7 @@ from __future__ import annotations
 import random
 import copy
 import time
-from typing import Optional, TypeAlias, no_type_check
+from typing import Optional, TypeAlias
 from player import Player
 
 Card : TypeAlias = tuple[str, Optional[int]]
@@ -11,7 +11,7 @@ Deck : TypeAlias = list[Card]
 ### Auxiliary function for deck of cards ###
 def get_clear_deck() -> Deck: # [(name, value)]
     deck : Deck = []
-    colours : list[str] = ["Sabre", "Stave", "Flask", "Coin"]
+    colours = ["Sabre", "Stave", "Flask", "Coin"]
     
     for colour in colours:
         deck += [(colour + "-" + str(v), v) for v in range(1, 12)]
@@ -34,12 +34,14 @@ def get_clear_deck() -> Deck: # [(name, value)]
     return deck
 
 def sort_deck(deck : Deck) -> Deck:
-    deck.sort(key = lambda ele: -ele[1] if isinstance(ele[1], int) else 0) # Sort by card's value
-    return deck
+    _deck = copy.deepcopy(deck)
+    _deck.sort(key = lambda ele: ele[1] or 0, reverse = True) # Sort by card's value
+    return _deck
 
 def shuffle_deck(deck : Deck) -> Deck:
-    random.shuffle(deck)
-    return deck
+    _deck = copy.deepcopy(deck)
+    random.shuffle(_deck)
+    return _deck
 
 ## Phases of the game ##
 RAISE = "Raise Phase"
@@ -77,17 +79,17 @@ class SabaccGame:
         self.players : list[Player] = [Player(starting_money) for _ in range(self.n)]
         self.cards : Deck = get_clear_deck()
         self.discarded_cards : Deck = []
-        self.whose_turn : int = -1
-        self.whose_turn_accept : int = -1
-        self.current_phase : str = IDLE
-        self.message : str = ""
+        self.whose_turn = -1
+        self.whose_turn_accept = -1
+        self.current_phase = IDLE
+        self.message = ""
 
-        self.basic_bet : int = basic_bet_value
-        self.value_to_raise : int = 0
-        self.sabacc_pot : int = 0
-        self.sabacc_winner : int = -1
-        self.main_pot : int = 0
-        self.main_pot_winner : int = -1
+        self.basic_bet = basic_bet_value
+        self.value_to_raise = 0
+        self.sabacc_pot = 0
+        self.sabacc_winner = -1
+        self.main_pot = 0
+        self.main_pot_winner = -1
 
 
     def set_name(self, pid : int, name : str) -> None:
@@ -198,7 +200,6 @@ class SabaccGame:
 
     # The final part of the game
     def show_game(self, pid : int) -> None:
-        print("Test: ", self.whose_turn_accept, self.current_phase, pid)
         if self.whose_turn_accept == pid and self.current_phase == RESULTS:
 
             if LOG:

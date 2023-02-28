@@ -84,11 +84,11 @@ def read_player_move(game : sg.SabaccGame, my_pid : int) -> Move:
 # Run with python client.py server_name port [username]
 if __name__ == "__main__":
 
-    clock : pygame.time.Clock = pygame.time.Clock()
+    clock = pygame.time.Clock()
     try:
         server : str = sys.argv[1]
         port = int(sys.argv[2])
-        n : Network = Network(server, port)
+        n = Network(server, port)
         my_pid : int = int(n.get_p())
     except:
         print("Error while connecting to the server")
@@ -117,7 +117,7 @@ if __name__ == "__main__":
         if (game.whose_turn == my_pid and game.current_phase not in {sg.ACCEPTING_RAISE, sg.SHOW}) \
             or (game.whose_turn_accept == my_pid and game.current_phase in {sg.ACCEPTING_RAISE, sg.SHOW}):
             # Update my move
-            next_move : Move = read_player_move(game, my_pid)
+            next_move = read_player_move(game, my_pid)
             game = n.send(next_move)
             update_game(win, game, my_pid)
 
