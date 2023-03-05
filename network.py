@@ -1,6 +1,7 @@
 import socket
 import pickle
 
+
 class Network:
     def __init__(self, _server, _port):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -25,4 +26,3 @@ class Network:
             return pickle.loads(self.client.recv(4096))
         except socket.error as err:
             print("Error: ", err)
-
