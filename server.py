@@ -16,9 +16,9 @@ def run_raise(move: Move) -> None:
     game.raise_bet(move.pid, move.value)
     game.current_phase = sg.Phase.ACCEPTING_RAISE
 
-    game.whose_turn_accept = (game.whose_turn + 1) % game.n
+    game.whose_turn_accept = (game.whose_turn + 1) % len(game.players)
     while game.players[game.whose_turn_accept].folded:
-        game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
+        game.whose_turn_accept = (game.whose_turn_accept + 1) % len(game.players)
 
 
 def run_shuffle(move: Move) -> None:
@@ -30,17 +30,17 @@ def run_shuffle(move: Move) -> None:
         game.shuffle_players_cards(move.pid)
 
     game.current_phase = sg.Phase.SHOW
-    game.whose_turn_accept = (game.whose_turn + 1) % game.n
+    game.whose_turn_accept = (game.whose_turn + 1) % len(game.players)
     while game.players[game.whose_turn_accept].folded:
-        game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
+        game.whose_turn_accept = (game.whose_turn_accept + 1) % len(game.players)
 
 
 # 1 = Show, 0 = Continue
 def run_show(move: Move) -> None:
     if move.value == 0:
-        game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
+        game.whose_turn_accept = (game.whose_turn_accept + 1) % len(game.players)
         while game.players[game.whose_turn_accept].folded:
-            game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
+            game.whose_turn_accept = (game.whose_turn_accept + 1) % len(game.players)
         # Nobody called
         if game.whose_turn_accept == game.whose_turn:
             game.whose_turn_accept = -1
@@ -96,9 +96,9 @@ def run_draw_phase(move: Move) -> None:
 
     # Next player's turn
     game.current_phase = sg.Phase.RAISE
-    game.whose_turn = (game.whose_turn + 1) % game.n
+    game.whose_turn = (game.whose_turn + 1) % len(game.players)
     while game.players[game.whose_turn].folded:
-        game.whose_turn = (game.whose_turn + 1) % game.n
+        game.whose_turn = (game.whose_turn + 1) % len(game.players)
 
 
 # Accept bet (1 = Yes, 0 = Fold)
@@ -108,9 +108,9 @@ def run_accepting_bets(move: Move) -> None:
     else:
         game.fold(move.pid)
 
-    game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
+    game.whose_turn_accept = (game.whose_turn_accept + 1) % len(game.players)
     while game.players[game.whose_turn_accept].folded:
-        game.whose_turn_accept = (game.whose_turn_accept + 1) % game.n
+        game.whose_turn_accept = (game.whose_turn_accept + 1) % len(game.players)
 
     # Everyone folded/paid
     if game.whose_turn_accept == game.whose_turn:
@@ -134,12 +134,12 @@ def auto_win() -> None:
     time.sleep(10)
     print("Paying main pot to the only one left")
 
-    for i in range(game.n):
-        if not game.players[i].folded:
-            game.players[i].money += game.main_pot
+    for player in game.players:
+        if not player.folded:
+            player.money += game.main_pot
             game.main_pot = 0
-            game.discarded_cards += game.players[i].cards
-            game.players[i].cards = []
+            game.discarded_cards += player.cards
+            player.cards = []
             break
 
     start_new_round()
@@ -244,14 +244,14 @@ if __name__ == "__main__":
     else:
         game = sg.SabaccGame(int(sys.argv[3]), int(sys.argv[4]), int(sys.argv[5]))
 
-    s.listen(game.n)
+    s.listen(len(game.players))
     print("Server started, waiting for players")
 
-    for pid_count in range(game.n):
+    for pid_count in range(len(game.players)):
         _conn, addr = s.accept()
         print("Connected to: ", addr)
 
-        if pid_count + 1 < game.n:
+        if pid_count + 1 < len(game.players):
             start_new_thread(threaded_client, (_conn, pid_count))
         else:  # Last player
             start_new_thread(start_new_round, ())
