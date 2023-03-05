@@ -42,38 +42,38 @@ def update_game(win, game : sg.SabaccGame, my_pid : int):
 
 def read_player_move(game : sg.SabaccGame, my_pid : int) -> Move:
     # TODO Do pygame interface
-    if game.current_phase == sg.RAISE:
+    if game.current_phase == sg.Phase.RAISE:
         print("Bet to raise (non-positive = skip)")
         value = int(input())
-        return Move(my_pid, sg.RAISE, value)
+        return Move(my_pid, sg.Phase.RAISE, value)
     
-    elif game.current_phase == sg.ACCEPTING_RAISE:
+    elif game.current_phase == sg.Phase.ACCEPTING_RAISE:
         print(f"Accept bet of [{game.value_to_raise}] (1 = Yes, 0 = Fold)")
         value = int(input())
-        return Move(my_pid, sg.ACCEPTING_RAISE, value)
+        return Move(my_pid, sg.Phase.ACCEPTING_RAISE, value)
 
-    elif game.current_phase == sg.SHUFFLE:
+    elif game.current_phase == sg.Phase.SHUFFLE:
         print("Roll dice")
         input()
-        return Move(my_pid, sg.SHUFFLE)
+        return Move(my_pid, sg.Phase.SHUFFLE)
 
-    elif game.current_phase == sg.SHOW:
+    elif game.current_phase == sg.Phase.SHOW:
         print("Show cards (1 = Show, 0 = Continue)")
         value = int(input())
-        return Move(my_pid, sg.SHOW, value)
+        return Move(my_pid, sg.Phase.SHOW, value)
 
-    elif game.current_phase == sg.RESULTS:
+    elif game.current_phase == sg.Phase.RESULTS:
         # No moves here
-        return Move(my_pid, sg.GET_BOARD)
+        return Move(my_pid, sg.Phase.GET_BOARD)
 
-    elif game.current_phase == sg.SUDDEN_DEMISE or game.current_phase == sg.IDLE:
+    elif game.current_phase == sg.Phase.SUDDEN_DEMISE or game.current_phase == sg.Phase.IDLE:
         # No moves here
-        return Move(my_pid, sg.GET_BOARD)
+        return Move(my_pid, sg.Phase.GET_BOARD)
 
-    elif game.current_phase == sg.DRAW:
+    elif game.current_phase == sg.Phase.DRAW:
         print("Draw new cards: (-1 = None, -2 = Extra Card, i = Index for card swap)")
         value = int(input())
-        return Move(my_pid, sg.DRAW, value)
+        return Move(my_pid, sg.Phase.DRAW, value)
 
     else:
         print("Wrong command error", file=sys.stderr)
@@ -105,17 +105,17 @@ if __name__ == "__main__":
         clock.tick(1)
 
         try:
-            game : sg.SabaccGame = n.send(Move(my_pid, sg.GET_BOARD))
+            game : sg.SabaccGame = n.send(Move(my_pid, sg.Phase.GET_BOARD))
             if game.players[my_pid].name != username:
-                game = n.send(Move(my_pid, sg.SET_NAME, username))
+                game = n.send(Move(my_pid, sg.Phase.SET_NAME, username))
             print("Received: ", game)
             update_game(win, game, my_pid)
         except:
             print("Coudn't get game!")
             break
 
-        if (game.whose_turn == my_pid and game.current_phase not in {sg.ACCEPTING_RAISE, sg.SHOW}) \
-            or (game.whose_turn_accept == my_pid and game.current_phase in {sg.ACCEPTING_RAISE, sg.SHOW}):
+        if (game.whose_turn == my_pid and game.current_phase not in {sg.Phase.ACCEPTING_RAISE, sg.Phase.SHOW}) \
+            or (game.whose_turn_accept == my_pid and game.current_phase in {sg.Phase.ACCEPTING_RAISE, sg.Phase.SHOW}):
             # Update my move
             next_move = read_player_move(game, my_pid)
             game = n.send(next_move)

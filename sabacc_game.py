@@ -3,6 +3,7 @@ import random
 import copy
 import time
 from typing import Optional, TypeAlias
+from enum import Enum
 from player import Player
 
 Card : TypeAlias = tuple[str, Optional[int]]
@@ -11,8 +12,9 @@ Deck : TypeAlias = list[Card]
 ### Auxiliary function for deck of cards ###
 def get_clear_deck() -> Deck: # [(name, value)]
     deck : Deck = []
+
+    # Regular cards
     colours = ["Sabre", "Stave", "Flask", "Coin"]
-    
     for colour in colours:
         deck += [(colour + "-" + str(v), v) for v in range(1, 12)]
         deck.append((colour + "-" + "commander", 12))
@@ -20,57 +22,55 @@ def get_clear_deck() -> Deck: # [(name, value)]
         deck.append((colour + "-" + "master", 14))
         deck.append((colour + "-" + "ace", 15))
 
-    # Negatives
-    neg : Deck = [("Queen", -2), ("Endurance", -8), ("Balance", -11), 
+    # Special cards (Idiots and Negatives)
+    special_cards = [("Idiot", 0), ("Queen", -2), ("Endurance", -8), ("Balance", -11), 
         ("Demise", -13), ("Moderation", -14), ("Evil-one", -15), ("Star", -17)]
 
-    deck += neg
-    deck += [(n + "_", v) for (n, v) in neg]
-
-    # Idiots
-    deck.append(("Idiot", 0))
-    deck.append(("Idiot2", 0))
+    deck += special_cards
+    deck += [(name + "_", value) for (name, value) in special_cards]
 
     return deck
 
-def sort_deck(deck : Deck) -> Deck:
-    _deck = copy.deepcopy(deck)
-    _deck.sort(key = lambda ele: ele[1] or 0, reverse = True) # Sort by card's value
-    return _deck
+def sort_deck(deck : Deck) -> None:
+    deck.sort(key = lambda ele: ele[1] or 0, reverse = True) # Sort by card's value
 
-def shuffle_deck(deck : Deck) -> Deck:
-    _deck = copy.deepcopy(deck)
-    random.shuffle(_deck)
-    return _deck
+
+def shuffle_deck(deck : Deck) -> None:
+    random.shuffle(deck)
+
 
 ## Phases of the game ##
-RAISE = "Raise Phase"
-ACCEPTING_RAISE = "Accepting Raise Phase" # not used yet
-SHUFFLE = "Shuffle Phase"
-SHOW = "Show Phase"
-RESULTS = "Results Phase"
-SUDDEN_DEMISE = "Sudden Demise Phase"
-DRAW = "Draw Phase"
+class Phase(str, Enum):
+    RAISE = "Raise Phase"
+    ACCEPTING_RAISE = "Accepting Raise Phase"
+    SHUFFLE = "Shuffle Phase"
+    SHOW = "Show Phase"
+    RESULTS = "Results Phase"
+    SUDDEN_DEMISE = "Sudden Demise Phase"
+    DRAW = "Draw Phase"
 
-GET_BOARD = "Get Board"
-SET_NAME = "Set Name"
-IDLE = "Idle Phase"
-
-# Anonymous card
-BACK_CARD = "Back"
+    # Auxiliary phases for displaying game
+    GET_BOARD = "Get Board"
+    SET_NAME = "Set Name"
+    IDLE = "Idle Phase"
 
 # Messages
-BOMB_OUT = "Bomb Out"
-PURE_SABACC = "Pure Sabacc"
-IDIOTS_ARRAY = "Idiots Array"
-SUDDEN_DEMISE_TIE = "Sudden Demise"
-BEST_VALUE_WINNER = "Best Value Cards"
+class Message(str, Enum):
+    BOMB_OUT = "Bomb Out"
+    PURE_SABACC = "Pure Sabacc"
+    IDIOTS_ARRAY = "Idiots Array"
+    SUDDEN_DEMISE_TIE = "Sudden Demise"
+    BEST_VALUE_WINNER = "Best Value Cards"
 
 # Parametres
 BOMB_RATIO = 1
+SHUFFLE_THRESHOLD = 2
 LOG = True
 
 SABACC_VALUE = 23
+
+# Anonymous card
+BACK_CARD = "Back"
 
 ## Sabacc game object ## 
 class SabaccGame:
@@ -81,7 +81,7 @@ class SabaccGame:
         self.discarded_cards : Deck = []
         self.whose_turn = -1
         self.whose_turn_accept = -1
-        self.current_phase = IDLE
+        self.current_phase = Phase.IDLE
         self.message = ""
 
         self.basic_bet = basic_bet_value
@@ -98,8 +98,9 @@ class SabaccGame:
 
     def draw_card(self) -> Card:
         if self.cards == []:
-            self.cards = shuffle_deck(self.discarded_cards)
+            self.cards = self.discarded_cards
             self.discarded_cards = []
+            shuffle_deck(self.cards)
 
         return self.cards.pop()
 
@@ -112,7 +113,7 @@ class SabaccGame:
 
     def sort_players_cards(self) -> None:
         for i in range(self.n):
-            self.players[i].cards = sort_deck(self.players[i].cards)
+            sort_deck(self.players[i].cards)
 
 
     def collect_start_game(self, in_value : int) -> None:
@@ -130,7 +131,7 @@ class SabaccGame:
 
     def start_game(self) -> None:
         self.collect_start_game(self.basic_bet)
-        self.cards = shuffle_deck(self.cards)
+        shuffle_deck(self.cards)
         self.message = ""
         for player in self.players:
             player.message = ""
@@ -146,7 +147,7 @@ class SabaccGame:
     def raise_bet(self, pid : int, value : int) -> None:
         value = max(0, value)
         value = min(value, self.players[pid].money)
-        if self.whose_turn == pid and self.current_phase == RAISE:
+        if self.whose_turn == pid and self.current_phase == Phase.RAISE:
             self.players[pid].money -= value
             self.main_pot += value
             self.value_to_raise = value
@@ -154,14 +155,14 @@ class SabaccGame:
 
     # Player's choice to accept raise
     def accept_bet(self, pid : int, value : int) -> None:
-        if self.whose_turn_accept == pid and self.current_phase == ACCEPTING_RAISE:
+        if self.whose_turn_accept == pid and self.current_phase == Phase.ACCEPTING_RAISE:
             self.players[pid].money -= value
             self.main_pot += value
 
 
     # Player's choice to skip the rest of the game
     def fold(self, pid : int) -> None:
-        if self.whose_turn_accept == pid and self.current_phase == ACCEPTING_RAISE:
+        if self.whose_turn_accept == pid and self.current_phase == Phase.ACCEPTING_RAISE:
             self.players[pid].folded = True 
             while len(self.players[pid].cards) > 0:
                 self.drop_card(pid, self.players[pid].cards[0])
@@ -175,7 +176,7 @@ class SabaccGame:
     # Shuffle phase (without random rolling part)    
     def shuffle_players_cards(self, pid : int) -> None:
         # TODO Shuffling wait or smth (pt 2)
-        if self.whose_turn == pid and self.current_phase == SHUFFLE:
+        if self.whose_turn == pid and self.current_phase == Phase.SHUFFLE:
             taken_cards = []
             for i in range(self.n):
                 if not self.players[i].folded:
@@ -187,7 +188,7 @@ class SabaccGame:
                 print("Shuffling cards:")
                 print(taken_cards)
             
-            taken_cards = shuffle_deck(taken_cards)
+            shuffle_deck(taken_cards)
             for i in range(self.n):
                 if not self.players[i].folded:
                     self.players[i].cards.append(taken_cards[i])
@@ -200,7 +201,7 @@ class SabaccGame:
 
     # The final part of the game
     def show_game(self, pid : int) -> None:
-        if self.whose_turn_accept == pid and self.current_phase == RESULTS:
+        if self.whose_turn_accept == pid and self.current_phase == Phase.RESULTS:
 
             if LOG:
                 print("Running show")
@@ -215,14 +216,14 @@ class SabaccGame:
                     sum_cards += value
                 
                 if sum_cards < (-1 * SABACC_VALUE) or sum_cards == 0 or sum_cards > SABACC_VALUE:
-                    self.players[i].message = BOMB_OUT
+                    self.players[i].message = Message.BOMB_OUT
 
             # Idiot's array
             idiots_array_cnt = 0
             for i in range(self.n):
                 if self.players[i].folded:
                     continue
-                if self.players[i].message == BOMB_OUT:
+                if self.players[i].message == Message.BOMB_OUT:
                     continue
                 
                 zero_present = False
@@ -238,14 +239,14 @@ class SabaccGame:
                 
                 if zero_present and two_present and three_present:
                     idiots_array_cnt += 1
-                    self.players[i].message = IDIOTS_ARRAY
+                    self.players[i].message = Message.IDIOTS_ARRAY
 
             if idiots_array_cnt == 1:
-                self.pay_prizes(IDIOTS_ARRAY)
+                self.pay_prizes(Message.IDIOTS_ARRAY)
                 return 
             elif idiots_array_cnt > 1:
-                self.run_sudden_demise(IDIOTS_ARRAY)
-                self.pay_prizes(IDIOTS_ARRAY)
+                self.run_sudden_demise(Message.IDIOTS_ARRAY)
+                self.pay_prizes(Message.IDIOTS_ARRAY)
                 return
             
 
@@ -254,7 +255,7 @@ class SabaccGame:
             for i in range(self.n):
                 if self.players[i].folded:
                     continue
-                if self.players[i].message == BOMB_OUT:
+                if self.players[i].message == Message.BOMB_OUT:
                     continue
 
                 sum_cards = 0
@@ -264,14 +265,14 @@ class SabaccGame:
                 
                 if sum_cards == SABACC_VALUE:
                     pure_sabacc_cnt += 1
-                    self.players[i].message = PURE_SABACC
+                    self.players[i].message = Message.PURE_SABACC
             
             if pure_sabacc_cnt == 1:
-                self.pay_prizes(PURE_SABACC)
+                self.pay_prizes(Message.PURE_SABACC)
                 return 
             elif pure_sabacc_cnt > 1:
-                self.run_sudden_demise(PURE_SABACC)
-                self.pay_prizes(PURE_SABACC)
+                self.run_sudden_demise(Message.PURE_SABACC)
+                self.pay_prizes(Message.PURE_SABACC)
                 return
 
             # Best cards
@@ -280,7 +281,7 @@ class SabaccGame:
             for i in range(self.n):
                 if self.players[i].folded:
                     continue
-                if self.players[i].message == BOMB_OUT:
+                if self.players[i].message == Message.BOMB_OUT:
                     continue
 
                 sum_cards = 0
@@ -291,7 +292,7 @@ class SabaccGame:
                 best_value = max(best_value, sum_cards)
             
             for i in range(self.n):
-                if self.players[i].message == BOMB_OUT:
+                if self.players[i].message == Message.BOMB_OUT:
                     continue
 
                 sum_cards = 0
@@ -301,21 +302,21 @@ class SabaccGame:
 
                 if sum_cards == best_value:
                     best_cards_cnt += 1
-                    self.players[i].message = BEST_VALUE_WINNER
+                    self.players[i].message = Message.BEST_VALUE_WINNER
             
             if best_cards_cnt == 1:
-                self.pay_prizes(BEST_VALUE_WINNER)
+                self.pay_prizes(Message.BEST_VALUE_WINNER)
                 return 
             elif best_cards_cnt > 1:
-                self.run_sudden_demise(BEST_VALUE_WINNER)
-                self.pay_prizes(BEST_VALUE_WINNER)
+                self.run_sudden_demise(Message.BEST_VALUE_WINNER)
+                self.pay_prizes(Message.BEST_VALUE_WINNER)
                 return
 
 
     # Tie breaker
-    def run_sudden_demise(self, draw_type : str) -> None:
+    def run_sudden_demise(self, draw_type : Message) -> None:
         print("# Sudden Demise #")
-        self.current_phase = SUDDEN_DEMISE
+        self.current_phase = Phase.SUDDEN_DEMISE
         time.sleep(10)
         if LOG:
             print(self.players)
@@ -339,14 +340,14 @@ class SabaccGame:
                 sum_cards += value
             
             if sum_cards < (-1 * SABACC_VALUE) or sum_cards == 0 or sum_cards > SABACC_VALUE:
-                self.players[i].message = BOMB_OUT
+                self.players[i].message = Message.BOMB_OUT
 
         # Best cards
         best_value = -100
         for i in range(self.n):
             if self.players[i].folded:
                 continue
-            if self.players[i].message == BOMB_OUT:
+            if self.players[i].message == Message.BOMB_OUT:
                 continue
 
             sum_cards = 0
@@ -359,7 +360,7 @@ class SabaccGame:
         for i in range(self.n):
             if self.players[i].folded:
                 continue
-            if self.players[i].message == BOMB_OUT:
+            if self.players[i].message == Message.BOMB_OUT:
                 continue
 
             sum_cards = 0
@@ -372,7 +373,7 @@ class SabaccGame:
 
 
     # Dealing money after the round
-    def pay_prizes(self, win_type : str) -> None:
+    def pay_prizes(self, win_type : Message) -> None:
         if LOG:
             print("Paying winners show")
 
@@ -385,14 +386,14 @@ class SabaccGame:
         for i in range(self.n):
             if self.players[i].folded:
                 continue
-            if self.players[i].message == BOMB_OUT:
+            if self.players[i].message == Message.BOMB_OUT:
                 self.sabacc_pot += min(main_pot_round // BOMB_RATIO, self.players[i].money)
                 self.players[i].money -= min(main_pot_round // BOMB_RATIO, self.players[i].money)
                 
             elif self.players[i].message == win_type:
                 winner_count += 1
 
-        if win_type == BEST_VALUE_WINNER: # Sabacc pot goes to the next round
+        if win_type == Message.BEST_VALUE_WINNER: # Sabacc pot goes to the next round
             self.sabacc_pot += sabacc_pot_round
             sabacc_pot_round = 0
 
@@ -415,21 +416,21 @@ class SabaccGame:
 
     # Drawing phase - extra card
     def draw_extra_card(self, pid : int) -> None:
-        if self.whose_turn == pid and self.current_phase == DRAW:
+        if self.whose_turn == pid and self.current_phase == Phase.DRAW:
             self.players[pid].cards.append(self.draw_card())
             self.sort_players_cards()
 
 
     # Drawing phase - replacing card
     def replace_card(self, pid : int, card : Card) -> None:
-        if self.whose_turn == pid and self.current_phase == DRAW and len(self.players[pid].cards) > 2 and card in self.players[pid].cards:
+        if self.whose_turn == pid and self.current_phase == Phase.DRAW and len(self.players[pid].cards) > 2 and card in self.players[pid].cards:
             self.players[pid].cards.remove(card)
             self.draw_extra_card(pid)
 
 
     # Copy to show to the player client unit
     def client_copy(self, pid : int = -1) -> SabaccGame:
-        if self.current_phase == RESULTS or self.current_phase == SUDDEN_DEMISE:
+        if self.current_phase == Phase.RESULTS or self.current_phase == Phase.SUDDEN_DEMISE:
             return self.full_copy()
 
         result = copy.deepcopy(self)
