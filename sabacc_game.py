@@ -17,7 +17,7 @@ def get_clear_deck() -> Deck:  # [(name, value)]
     # Regular cards
     colours = ["Sabre", "Stave", "Flask", "Coin"]
     for colour in colours:
-        deck += [(colour + "-" + str(v), v) for v in range(1, 12)]
+        deck += [(colour + "-" + str(value), value) for value in range(1, 12)]
         deck.append((colour + "-" + "commander", 12))
         deck.append((colour + "-" + "mistress", 13))
         deck.append((colour + "-" + "master", 14))
@@ -80,6 +80,7 @@ SHUFFLE_THRESHOLD = 2
 LOG = True
 
 SABACC_VALUE = 23
+IDIOT_ARRAY_SET = {1, 2, 3}
 
 # Anonymous card
 BACK_CARD = "Back"
@@ -93,7 +94,9 @@ class SabaccGame:
         starting_money: int = 2000,
         basic_bet_value: int = 50,
     ):
-        self.players: list[Player] = [Player(starting_money) for _ in range(no_of_players)]
+        self.players: list[Player] = [
+            Player(starting_money) for _ in range(no_of_players)
+        ]
         self.cards: Deck = get_clear_deck()
         self.discarded_cards: Deck = []
         self.whose_turn = -1
@@ -112,7 +115,7 @@ class SabaccGame:
         self.players[pid].name = name
 
     def draw_card(self) -> Card:
-        if self.cards == []:
+        if not self.cards:
             self.cards = self.discarded_cards
             self.discarded_cards = []
             shuffle_deck(self.cards)
@@ -130,7 +133,7 @@ class SabaccGame:
 
     def collect_start_game(self, in_value: int) -> None:
         for player in self.players:
-            player.folded = (player.money < in_value * 2)
+            player.folded = player.money < in_value * 2
 
             if not player.folded:
                 player.money -= in_value * 2
@@ -174,11 +177,9 @@ class SabaccGame:
             and self.current_phase == Phase.ACCEPTING_RAISE
         ):
             self.players[pid].folded = True
-
             self.discarded_cards += self.players[pid].cards
             self.players[pid].cards = []
 
-    # Die similator
     def roll_die(self) -> int:
         return random.randint(1, 6)
 
@@ -201,12 +202,15 @@ class SabaccGame:
 
             if LOG:
                 print(taken_cards)
-            
+
             for player in self.players:
                 if not player.folded:
                     player.cards.append(taken_cards.pop())
 
             self.sort_players_cards()
+
+    def bomb_out_value(self, value: int) -> bool:
+        return value == 0 or abs(value) > SABACC_VALUE
 
     # The final part of the game
     def show_game(self, pid: int) -> None:
@@ -219,16 +223,8 @@ class SabaccGame:
                 if player.folded:
                     continue
 
-                sum_cards = 0
-                for _, value in player.cards:
-                    assert value is not None
-                    sum_cards += value
-
-                if (
-                    sum_cards < (-1 * SABACC_VALUE)
-                    or sum_cards == 0
-                    or sum_cards > SABACC_VALUE
-                ):
+                sum_cards = player.get_cards_value()
+                if self.bomb_out_value(sum_cards):
                     player.message = Message.BOMB_OUT
 
             # Idiot's array
@@ -237,18 +233,8 @@ class SabaccGame:
                 if player.folded or player.message == Message.BOMB_OUT:
                     continue
 
-                zero_present = False
-                two_present = False
-                three_present = False
-                for _, value in player.cards:
-                    if value == 0:
-                        zero_present = True
-                    elif value == 2:
-                        two_present = True
-                    elif value == 3:
-                        three_present = True
-
-                if zero_present and two_present and three_present:
+                values = {card[1] for card in player.cards}
+                if IDIOT_ARRAY_SET.issubset(values):
                     idiots_array_cnt += 1
                     player.message = Message.IDIOTS_ARRAY
 
@@ -266,11 +252,7 @@ class SabaccGame:
                 if player.folded or player.message == Message.BOMB_OUT:
                     continue
 
-                sum_cards = 0
-                for _, value in player.cards:
-                    assert value is not None
-                    sum_cards += value
-
+                sum_cards = player.get_cards_value()
                 if sum_cards == SABACC_VALUE:
                     pure_sabacc_cnt += 1
                     player.message = Message.PURE_SABACC
@@ -290,22 +272,14 @@ class SabaccGame:
                 if player.folded or player.message == Message.BOMB_OUT:
                     continue
 
-                sum_cards = 0
-                for _, value in player.cards:
-                    assert value is not None
-                    sum_cards += value
-
+                sum_cards = player.get_cards_value()
                 best_value = max(best_value, sum_cards)
 
             for player in self.players:
                 if player.folded or player.message == Message.BOMB_OUT:
                     continue
 
-                sum_cards = 0
-                for _, value in player.cards:
-                    assert value is not None
-                    sum_cards += value
-
+                sum_cards = player.get_cards_value()
                 if sum_cards == best_value:
                     best_cards_cnt += 1
                     player.message = Message.BEST_VALUE_WINNER
@@ -336,19 +310,11 @@ class SabaccGame:
 
         # Bomb-outs
         for player in self.players:
-            if not player.folded:
+            if player.folded or player.message == Message.BOMB_OUT:
                 continue
 
-            sum_cards = 0
-            for _, value in player.cards:
-                assert value is not None
-                sum_cards += value
-
-            if (
-                sum_cards < (-1 * SABACC_VALUE)
-                or sum_cards == 0
-                or sum_cards > SABACC_VALUE
-            ):
+            sum_cards = player.get_cards_value()
+            if self.bomb_out_value(sum_cards):
                 player.message = Message.BOMB_OUT
 
         # Best cards
@@ -357,22 +323,14 @@ class SabaccGame:
             if player.folded or player.message == Message.BOMB_OUT:
                 continue
 
-            sum_cards = 0
-            for _, value in player.cards:
-                assert value is not None
-                sum_cards += value
-
+            sum_cards = player.get_cards_value()
             best_value = max(best_value, sum_cards)
 
         for player in self.players:
             if player.folded or player.message == Message.BOMB_OUT:
                 continue
 
-            sum_cards = 0
-            for _, value in player.cards:
-                assert value is not None
-                sum_cards += value
-
+            sum_cards = player.get_cards_value()
             if sum_cards < best_value:
                 player.message = ""
 
@@ -398,7 +356,8 @@ class SabaccGame:
             elif player.message == win_type:
                 winner_count += 1
 
-        if win_type == Message.BEST_VALUE_WINNER:  # Sabacc pot goes to the next round
+        # Sabacc pot goes to the next round
+        if win_type == Message.BEST_VALUE_WINNER or winner_count == 0:
             self.sabacc_pot += sabacc_pot_round
             sabacc_pot_round = 0
 
@@ -406,8 +365,11 @@ class SabaccGame:
             if player.folded:
                 continue
             if player.message == win_type:
-                player.money += (main_pot_round // winner_count + sabacc_pot_round // winner_count)
+                player.money += (
+                    main_pot_round // winner_count + sabacc_pot_round // winner_count
+                )
 
+        # Main pot goes to the next round
         if winner_count == 0:
             self.main_pot = main_pot_round
 
@@ -473,15 +435,14 @@ class SabaccGame:
             p_cards.append(p.cards)
             p_mess.append(p.message)
             p_money.append(p.money)
+
         print(" vs ".join(p_names))
         print(p_money, f"Main pot = {self.main_pot}; Sabacc pot = {self.sabacc_pot}")
         print(p_cards)
         print(self.current_phase, self.whose_turn, self.whose_turn_accept)
-        mess_present = self.message != ""
-        for ele in p_mess:
-            mess_present = mess_present or ele != ""
-        if mess_present:
-            print(p_mess, self.message)
+        if self.message or any(p_mess):
+            print(self.message)
+            print(p_mess)
         print()
 
 
