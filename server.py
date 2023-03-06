@@ -162,7 +162,7 @@ def play_move(move: Move) -> None:
             exit("Wrong command error sudden demise")
         case sg.Phase.DRAW:
             run_draw_phase(move)
-        else other:
+        case _:
             exit(f"Unknown command error: {move}")
 
     game.status()
