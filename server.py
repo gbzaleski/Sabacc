@@ -147,25 +147,23 @@ def auto_win() -> None:
 
 # Already satisfied fact that the move can be played
 def play_move(move: Move) -> None:
-    if move.type == sg.Phase.RAISE:
-        run_raise(move)
-    elif move.type == sg.Phase.ACCEPTING_RAISE:
-        run_accepting_bets(move)
-    elif move.type == sg.Phase.SHUFFLE:
-        run_shuffle(move)
-    elif move.type == sg.Phase.SHOW:
-        run_show(move)
-    elif move.type == sg.Phase.RESULTS:
-        print("Wrong command error results", file=sys.stderr)
-        exit()
-    elif move.type == sg.Phase.SUDDEN_DEMISE:
-        print("Wrong command error sudden demise", file=sys.stderr)
-        exit()
-    elif move.type == sg.Phase.DRAW:
-        run_draw_phase(move)
-    else:
-        print("Unknown command error", move, file=sys.stderr)
-        exit()
+    match move.type:
+        case sg.Phase.RAISE:
+            run_raise(move)
+        case sg.Phase.ACCEPTING_RAISE:
+            run_accepting_bets(move)
+        case sg.Phase.SHUFFLE:
+            run_shuffle(move)
+        case sg.Phase.SHOW:
+            run_show(move)
+        case sg.Phase.RESULTS:
+            exit("Wrong command error results")
+        case sg.Phase.SUDDEN_DEMISE:
+            exit("Wrong command error sudden demise")
+        case sg.Phase.DRAW:
+            run_draw_phase(move)
+        else other:
+            exit(f"Unknown command error: {move}")
 
     game.status()
 
