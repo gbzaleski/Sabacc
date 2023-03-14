@@ -7,7 +7,7 @@ class Move:
 
     def __str__(self):
         return (
-            f"[{self.pid}: {self.type} (dupa{self.value})]"
+            f"[{self.pid}: {self.type} (pupa{self.value})]"
             if self.value
             else f"[{self.pid}: {self.type}]"
         )
